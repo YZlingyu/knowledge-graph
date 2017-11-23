@@ -1,0 +1,62 @@
+/*通用，画布相关*/
+*{
+    font-family:"Microsoft Sans Serif";
+}
+#main{
+    width: 800px;
+    height: 800px;
+    padding: 0 20px;
+}
+/*.svg{
+    margin-top: 0px;
+}*/
+#zoom{
+    width: 200px;
+    border: 1px solid #cccccc;
+    float: right;
+    margin: 20px 50px;
+    padding-bottom: 20px;
+}
+.box{
+    width: 20px;
+    height:10px;
+    margin-left:20px;
+    margin-top: 20px;
+    display: inline-block;
+    margin-right: 10px;
+}
+.name{
+    display: inline-block;
+    margin-top: 20px;
+}
+.title{
+    width: 500px;
+    text-align: center;
+}
+
+/*饼状图提示框*/
+.tooltip{
+    position: absolute;
+    width: 120px;
+    height: auto;
+    font-family: "Microsoft Sans Serif";
+    font-size: 14px;
+    text-align: center;
+    border-width: 2px;
+    background-color: black;
+    border-radius: 5px;
+    color: white;
+}
+.tooltip:after{
+    content:'';
+    position: absolute;
+    bottom: 100%;
+    left: 20%;
+    margin-left: -8px;
+    width: 0;
+    height: 0;
+    border-bottom: 12px solid #000000;
+    border-right: 12px solid transparent;
+    border-left: 12px solid transparent;
+}
+

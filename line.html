@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>折线图</title>
+    <link rel="stylesheet" href="knowledge.css" type="text/css"/>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+</head>
+<style>
+    .overlay{
+        fill: none;
+        pointer-events: all;
+    }
+    .tooltip2{
+        position: absolute;
+        border: 1px solid #cccccc;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .tooltip2 .title2{
+        border-bottom: 1px solid #000;
+        test-align: center;
+    }
+    .tooltip2 .desColor{
+        width: 10px;
+        height: 10px;
+        float: left;
+        margin: 9px 8px 1px 8px;
+    }
+    .tooltip2 .desText{
+        display: inline;
+    }
+    .axis{
+        fill: none;
+        stroke: black;
+        /*shape-rendering: crispEdges;*/
+    }
+    .path{
+        fill: none;
+        stroke-width: 3;
+    }
+</style>
+<body>
+<div id="main">
+    <div class="title">
+        <h1 class="title1">各国GDP情况</h1>
+    </div>
+    <div id="zoom">
+        <div class="box"></div>
+        <span class="name"></span>
+    </div>
+    <button id="btn">print</button>
+</div>
+
+<script>
+    var dataset = [
+        {
+            country:"china",
+            gdp:[[2000, 11920],[2001,13170],[2002,14550],
+                [2003,16500],[2004,19440],[2005,22870],
+                [2006,27930],[2007,35040],[2008,45470],
+                [2009,51050],[2010,59490],[2011,73140],
+                [2012,83860],[2013,103550]]
+        },
+        {
+            country:"japan",
+            gdp:[[2000,47310],[2001,41590],[2002,39800],
+                [2003,43020],[2004,46550],[2005,45710],
+                [2006,43560],[2007,43560],[2008,48490],
+                [2009,50350],[2010,54950],[2011,59050],
+                [2012,59370],[2013,48980]]
+        }];
+    let padding = {
+        top: 50,
+        right: 50,
+        bottom: 50,
+        left: 100
+    };
+    let height = 500;
+    let width = 700;
+
+    let gdpmax = 0;
+
+    for(var i=0; i<dataset.length;i++){
+        var currgdp = d3.max(dataset[i].gdp, function(d){
+            return d[1];
+        });
+
+        if(currgdp >gdpmax){
+            gdpmax = currgdp;
+        }
+    }
+
+    var svg = d3.select("#main")
+        .append("svg")
+        .attr("class", "svg")
+        .attr("width",width)
+        .attr("height", height);
+
+    var xScale = d3.scale.linear()
+        .domain([2000, 2013])
+        .range([0, width-padding.left-padding.right]);
+
+    var yScale = d3.scale.linear()
+        .domain([0,gdpmax*1.1])
+        .range([height - padding.top - padding.bottom, 0]);
+
+    var linePath = d3.svg.line()
+        .x(function(d){return xScale(d[0]);})
+        .y(function(d){return yScale(d[1]);});
+
+    var color = [d3.rgb(0,0,255), d3.rgb(0,255,0)];
+
+    svg.selectAll('path')
+        .data(dataset)
+        .enter()
+        .append("path")
+        .attr("class","path")
+        .attr("transform", "translate("+padding.left+","+padding.top+")")
+        .attr("d", function(d){
+            return linePath(d.gdp);
+        })
+        .attr("fill", "none")
+        .attr("stroke", function(d,i){
+            return color[i];
+        });
+
+    var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .ticks(5)
+        .tickFormat(d3.format("d"))
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left");
+
+
+    var focusLine = svg.append("g")
+        .attr("class", "focusLine")
+        .style("display", "none");
+
+    var vLine = focusLine.append("line");
+    var hLine = focusLine.append("line");
+
+    //添加提示框
+    var tooltip2 = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip2")
+        .style("opacity", 0.0);
+
+    var title2 = tooltip2.append("div")
+        .attr("class", "title2");
+
+    var des = tooltip2.selectAll(".des")
+        .data(dataset)
+        .enter()
+        .append("div");
+
+    var desColor = des.append("div")
+        .attr("class", "desColor");
+
+    var desText = des.append("div")
+        .attr("class", "desText");
+
+    var vLine = svg.append("line")
+        .attr("class", "focusLine")
+        .style("display", "none");
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("fill","none")
+        .attr("stroke","black")
+        .attr("transform", "translate(" + padding.left + ","+(height - padding.bottom)+")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("fill","none")
+        .attr("stroke","black")
+        .attr("transform","translate("+padding.left+","+padding.top+")")
+        .call(yAxis);
+
+    //坐标系中的焦点
+    svg.append("rect")
+        .attr("class", "overlay")
+        .attr("x", padding.left)
+        .attr("y", padding.top)
+        .attr("fill","none")
+        .attr("width", width-padding.left-padding.right)
+        .attr("height", height-padding.top-padding.bottom)
+        .on("mouseover", function(){
+            tooltip2.style("left", (d3.event.pageX)+"px")
+                .style("top", (d3.event.pageY+20)+"px")
+                .style("opacity", 0.0);
+            vLine.style("display", null);
+        })
+        .on("mouseout", function(){
+            tooltip2.style("opacity", 0.0);
+            vLine.style("display", "none");
+        })
+        .on("mousemove", mousemove);
+
+
+
+    function mousemove(){
+        var data = dataset[0].gdp;
+
+        var mouseX = d3.mouse(this)[0] - padding.left;
+        var mouseY = d3.mouse(this)[1] - padding.top;
+
+        var x0 = xScale.invert(mouseX);
+        var y0 = yScale.invert(mouseY);
+
+        x0 = Math.round(x0);
+
+        var bisect = d3.bisector(function(d){
+            return d[0];
+        }).left;
+
+        var index = bisect(data,x0);
+
+        var x1 = data[index][0];
+        var y1 = data[index][1];
+
+        var focusX = xScale(x1) + padding.left;
+        var focusY = yScale(y1) + padding.top;
+
+        vLine.attr("x1", focusX)
+            .attr("y1", focusY)
+            .attr("x2", padding.left)
+            .attr("y2", focusY);
+
+        var year = x0;
+        var gdp = [];
+        for(var k=0; k<dataset.length;k++){
+            gdp[k] = {
+                country: dataset[k].country,
+                value:dataset[k].gdp[index][1]
+            };
+        }
+
+        title2.html("<strong>"+year+"年</strong>");
+
+        desColor.style("background-color", function(d,i){
+            return color[i];
+        });
+
+        desText.html(function(d,i){
+            return gdp[i].country +"\t"+"<strong>"+gdp[i].value+"</strong>";
+        });
+
+        tooltip2.style("left", (d3.event.pageX)+"px")
+            .style("top",(d3.event.pageY+20)+"px");
+
+        var vlx = xScale(data[index][0])+padding.left;
+
+        vLine.attr("x1", vlx)
+            .attr("y1", padding.top)
+            .attr("x2", vlx)
+            .attr("y2", height-padding.bottom);
+    }
+
+    function $(str){
+        var symbol=str.charAt(0);
+        var name=str.substr(1);
+        switch(symbol){
+            case "#":
+                return document.getElementById(name);
+                break;
+            case ".":
+                return document.getElementsByClassName(name);
+                break;
+            default:
+                return document.getElementsByTagName(str);
+        }
+    }
+
+    //提示信息
+    var length = color.length;
+    var txt = '';
+    for(var i=0; i<length; i++){
+        txt=txt+'<div class="box"></div><span class="name">'+dataset[i].country+'</span><br/>';
+    }
+    $("#zoom").innerHTML=txt;
+    for(i=0; i<length; i++){
+        $(".box")[i].style.backgroundColor=color[i];
+    }
+
+</script>
+<script type="text/javascript">
+    var serializer = new XMLSerializer();
+    var source = serializer.serializeToString(svg.node());
+    //console.log(source);
+
+    source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+    var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+    document.write('<img src="' + url + '"/>');
+
+    var canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    var context = canvas.getContext("2d");
+    var image = new Image;
+    image.src = document.getElementsByTagName('img')[0].src;
+    document.getElementsByTagName("img")[0].style.display="none";
+    document.getElementById("btn").onclick=function(){
+
+        context.drawImage(image, 0, 0);
+
+        var a = document.createElement("a");
+        a.download = "fallback.png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+    }
+</script>
+</body>
+</html>

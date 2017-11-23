@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>饼状图</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<style>
+    .tooltip{
+        position: absolute;
+        width: 120px;
+        height: auto;
+        font-family: "Microsoft Sans Serif";
+        font-size: 14px;
+        text-align: center;
+        border-width: 2px;
+        background-color: black;
+        border-radius: 5px;
+        color: white;
+    }
+    .tooltip:after{
+        content:'';
+        position: absolute;
+        bottom: 100%;
+        left: 20%;
+        margin-left: -8px;
+        width: 0;
+        height: 0;
+        border-bottom: 12px solid #000000;
+        border-right: 12px solid transparent;
+        border-left: 12px solid transparent;
+    }
+    #main{
+        width: 800px;
+        height: 800px;
+    }
+    .svg{
+        margin-top: 50px;
+    }
+    #zoom{
+        width: 200px;
+        border: 1px solid #cccccc;
+        float: right;
+        margin-right: 50px;
+        margin-top:20px;
+    }
+    .box{
+        width: 20px;
+        height:10px;
+        margin-left:20px;
+        margin-top: 20px;
+        display: inline-block;
+        margin-right: 10px;
+    }
+    .name{
+        display: inline-block;
+        margin-top: 20px;
+    }
+    .title{
+        width: 500px;
+        text-align: center;
+    }
+</style>
+<body>
+<div id="main">
+    <button id="btn">print</button>
+    <div class="title">
+        <h1 class="title1">各公司营业情况</h1>
+    </div>
+    <div id="zoom">
+        <div class="box"></div>
+        <span class="name"></span>
+    </div>
+</div>
+</body>
+<script>
+    function $(str){
+        var symbol=str.charAt(0);//存放符号
+        var name=str.substr(1);//存放元素的id名或类名
+        switch(symbol){
+            case "#":
+                return document.getElementById(name);
+                break;
+            case ".":
+                return document.getElementsByClassName(name);
+                break;
+            default:
+                return document.getElementsByTagName(str);
+        }
+    }
+    var dataset =[
+        ["小米",60.8], ["三星",58.4], ["联想",47.3], ["苹果",46.6], ["华为",41.3], ["酷派",40.1], ["其他",111.5]
+    ];
+
+    var width = 500;
+    var height = 500;
+
+    var svg = d3.select("#main")
+        .append("svg")
+        .attr("class", "svg")
+        .attr("width",width)
+        .attr("height", height);
+
+    var pie = d3.layout.pie()
+        .value(function(d){return d[1];});
+
+    var piedata = pie(dataset);
+
+    var outerRadius = width/3;
+    var innerRadius = 0;
+
+    var arc ;
+
+    var arcs = svg.selectAll("g")
+        .data(piedata)
+        .enter()
+        .append("g")
+        .each(function(d){
+            d.dx=width/2;
+            d.dy=height/2;
+        })
+        .attr("transform", "translate("+(width/2)+","+(height/2)+")");
+
+
+    var color=["#086cff","#15BCFF","#20F2FF","#25FFDF","#27FFA5","#21FF70","#FFFD66"];
+    arcs.append("path")
+        .attr("fill", function(d,i){
+            return color[i];
+        })
+        .attr("d", function(d){
+            arc = d3.svg.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(outerRadius);
+            //d.dx = dx+5;
+            return arc(d);
+        })
+        .on("mouseover",function(d,i){
+            //console.log( d3.select(this).attr(d));
+            d3.select(this).attr("fill","pink");
+            d3.select(this).style("box-shadow","5px 5px 5px #747474");
+            d3.select(this).attr("d", function(){
+                arc = d3.svg.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius+50);
+                //d.dx = dx+5;
+                return arc(d);
+            })
+        })
+        .on("mouseout",function(d,i){
+            d3.select(this).attr("fill",color[i]);
+            d3.select(this).attr("d", function(){
+                arc = d3.svg.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius);
+                //d.dx = dx+5;
+                return arc(d);
+            })
+        });
+
+    arcs.append("text")
+        .attr("transform", function(d){
+            var x = arc.centroid(d)[0]*1.4;
+            var y = arc.centroid(d)[1]*1.4;
+            return "translate("+x+","+y+")";
+        })
+        .attr("text-anchor","middle")
+        .text(function(d){
+            var percent = Number(d.value)/
+                    d3.sum(dataset, function(d){return d[1];})*100;
+
+            return percent.toFixed(1)+"%";
+        });
+
+    arcs.append("line")
+        .attr("stroke", "black")
+        .attr("x1", function(d){
+           return arc.centroid(d)[0]*2;
+        })
+        .attr("y1", function(d){
+            return arc.centroid(d)[1]*2;
+        })
+        .attr("x2", function(d){
+            return arc.centroid(d)[0]*2.2;
+        })
+        .attr("y2", function(d){
+            return arc.centroid(d)[1]*2.2;
+        });
+
+    arcs.append("text")
+        .attr("transform", function(d){
+            var x = arc.centroid(d)[0]*2.5;
+            var y = arc.centroid(d)[1]*2.5;
+            return "translate("+x+","+y+")";
+        })
+        .attr("text-anchor","middle")
+        .text(function(d){
+            return d.data[0];
+        });
+
+    //添加提示框
+    var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0.0);
+
+    arcs.on("mouseover", function(d,i){
+        tooltip.html(d.data[0]+"的出货量是"+"<br/>"+
+        d.data[1]+"百万台")
+            .style("left",(d3.event.pageX)+"px")
+            .style("opacity",1.0);
+
+        tooltip.style("box-shadow", "10px 0 0 "+color[i]);
+    })
+        .on("mousemove",function(d){
+            tooltip.style("left",(d3.event.pageX)+"px")
+                .style("top",(d3.event.pageY+20)+"px");
+        })
+        .on("mouseout", function(d){
+            tooltip.style("opacity", 0.0);
+        })
+
+
+    //添加拖拽
+    var drag = d3.behavior.drag()
+        .origin(null)
+        .on("drag", dragmove);
+
+    function dragmove(d){
+        d.dx += d3.event.dx;
+        d.dy += d3.event.dy;
+        d3.select(this)
+            .attr("transform","translate("+d.dx+","+d.dy+")");
+    }
+    arcs.call(drag);
+
+    //提示信息
+    var length = color.length;
+    var txt = '';
+    for(var i=0; i<length; i++){
+        txt=txt+'<div class="box"></div><span class="name">'+dataset[i][0]+'</span><br/>';
+    }
+    $("#zoom").innerHTML=txt;
+    for(i=0; i<length; i++){
+        $(".box")[i].style.backgroundColor=color[i];
+    }
+
+
+</script>
+<script type="text/javascript">
+    var serializer = new XMLSerializer();
+    var source = serializer.serializeToString(svg.node());
+
+    source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+
+    var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+    document.write('<img src="' + url + '"/>');
+
+    var canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    var context = canvas.getContext("2d");
+    var image = new Image;
+    image.src = document.getElementsByTagName('img')[0].src;
+    document.getElementsByTagName("img")[0].style.display="none";
+
+    document.getElementById("btn").onclick=function(){
+        context.drawImage(image, 0, 0);
+
+        var a = document.createElement("a");
+        a.download = "fallback.png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+    }
+</script>
+</html>
